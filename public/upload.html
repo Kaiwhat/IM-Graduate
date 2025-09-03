@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>畢業學分自我檢核表 — 產生器(初版)</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Noto Sans TC", Arial;
+            margin: 2rem;
+        }
+
+        .box {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 1000px;
+        }
+
+        pre {
+            background: #f7f7f8;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 50vh;
+        }
+
+        .row {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            padding: .6rem 1rem;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h2>上傳校務系統 HTML → 產出 PDF/DOCX/XLSX</h2>
+        <form id="form" class="row" style="margin-bottom: .6rem;">
+            <input type="file" name="htmlFile" accept=".html,.htm" required />
+            <button type="submit">解析 (JSON)</button>
+            <select id="format">
+                <option value="pdf">PDF</option>
+                <option value="docx">DOCX</option>
+                <option value="xlsx">XLSX</option>
+            </select>
+            <button type="button" id="gen">下載檢核表</button>
+            <a href="/viewer.html" style="margin-left:auto">切換到「網頁版檢視」 →</a>
+        </form>
+
+
+        <details>
+            <summary>或貼上 &lt;table&gt; 片段解析</summary>
+            <textarea id="frag" style="width:100%;height:140px;font-family:ui-monospace,monospace;"></textarea>
+            <div class="row" style="margin-top:.5rem;">
+                <button id="parseFrag">解析片段(JSON)</button>
+                <button id="genFrag">下載檢核表(用片段)</button>
+            </div>
+        </details>
+
+
+        <div id="out" style="margin-top:1rem;"></div>
+    </div>
+    <script>
+        const form = document.getElementById('form');
+        const out = document.getElementById('out');
+        const fmt = document.getElementById('format');
+        const gen = document.getElementById('gen');
+        const frag = document.getElementById('frag');
+
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            out.textContent = '解析中...';
+            const fd = new FormData(form);
+            const r = await fetch('/parse', { method: 'POST', body: fd });
+            const j = await r.json();
+            out.innerHTML = `<pre>${JSON.stringify(j, null, 2)}</pre>`;
+        });
+
+
+        gen.addEventListener('click', async () => {
+            const fd = new FormData(form);
+            const r = await fetch(`/generate?format=${fmt.value}`, { method: 'POST', body: fd });
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `checklist.${fmt.value}`; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+
+        document.getElementById('parseFrag').addEventListener('click', async () => {
+            out.textContent = '解析中...';
+            const r = await fetch('/parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableHtml: frag.value })
+            });
+            const j = await r.json();
+            out.innerHTML = `<pre>${JSON.stringify(j, null, 2)}</pre>`;
+        });
+
+
+        document.getElementById('genFrag').addEventListener('click', async () => {
+            const r = await fetch(`/generate?format=${fmt.value}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableHtml: frag.value })
+            });
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `checklist.${fmt.value}`; a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+
+</html>

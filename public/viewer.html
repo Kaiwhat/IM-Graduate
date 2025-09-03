@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>畢業學分自我檢視 — Web Viewer</title>
+    <style>
+        :root {
+            --gap: 12px;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Noto Sans TC", Arial;
+            margin: 24px;
+        }
+
+        .grid {
+            display: grid;
+            gap: var(--gap);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: var(--gap);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px 14px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: var(--gap);
+        }
+
+        .card h4 {
+            margin: 0 0 6px;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .card .num {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .muted {
+            color: #6b7280;
+        }
+
+        .table-wrap {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            z-index: 1;
+            font-weight: 700;
+        }
+
+        th,
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        input[type="file"],
+        select,
+        input[type="search"],
+        button {
+            font: inherit;
+        }
+
+        button {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #f3f4f6;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .tag {
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            font-size: 12px;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .nowrap {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container grid" style="gap:20px;">
+
+
+        <div class="toolbar">
+            <form id="form" class="toolbar" onsubmit="return false;">
+                <input type="file" name="htmlFile" accept=".html,.htm" required />
+                <button id="btnParse">解析</button>
+                <span class="spacer"></span>
+                <a href="/upload.html" class="muted">回「產生器」頁</a>
+            </form>
+        </div>
+        <div id="summary" class="cards"></div>
+
+
+        <div class="toolbar">
+            <input id="q" type="search" placeholder="搜尋 科目代碼/名稱/開課單位…" style="min-width:280px;" />
+            <select id="filterCat"></select>
+            <select id="filterDomain"></select>
+            <label class="muted"><input type="checkbox" id="onlyNonPass" /> 只看未通過/0學分</label>
+            <span id="count" class="muted"></span>
+        </div>
+
+
+        <div class="table-wrap">
+            <table id="tbl">
+                <thead>
+                    <tr>
+                        <th class="nowrap">類別</th>
+                        <th class="nowrap">領域</th>
+                        <th>科目</th>
+                        <th class="nowrap">必/選</th>
+                        <th class="nowrap">群</th>
+                        <th>開課單位</th>
+                        <th class="right nowrap">科目學分</th>
+                        <th class="right nowrap">實得學分</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+        const $ = (s, el = document) => el.querySelector(s);
+        const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+
+
+        let lastFile = null; // 保留上傳檔案供下載產出使用
+        let raw = null; // 從 /parse 回來的 JSON
+        let viewRows = []; // 經過篩選後的列
+
+
+        // 工具：把連續相同值（且非空）切段，回傳 { span: Map(startIndex -> len), starts: Set(startIndex) }
+        function computeRuns(arr) {
+            const span = new Map();
+            const starts = new Set();
+            let runStart = null;
+            const norm = v => (v == null ? '' : String(v).trim());
+            for (let i = 0; i < arr.length; i++) {
+                const v = norm(arr[i]);
+                if (!v) { // 空值不合併
+                    if (runStart !== null) { const len = i - runStart; if (len > 1) { span.set(runStart, len); } runStart = null; }
+                    continue;
+                }
+                if (runStart === null) { runStart = i; }
+                else {
+                    const prev = norm(arr[i - 1]);
+                    if (v !== prev) { const len = i - runStart; if (len > 1) { span.set(runStart, len); } runStart = i; }
+                }
+            }
+            if (runStart !== null) { const len = arr.length - runStart; if (len > 1) { span.set(runStart, len); } }
+            span.forEach((len, start) => starts.add(start));
+            return { span, starts };
+        }
+
+
+        function renderSummary(d) {
+            const c = $('#summary');
+            if (!d || !d.ruleSummary) { c.innerHTML = ''; return; }
+            const s = d.ruleSummary;
+            const cards = [
+                { name: '全校共同必修', val: s.byBucket.common, hint: `目標 ${s.requiredMin}` },
+                { name: '通識領域課程', val: s.byBucket.general, hint: `目標 ${s.generalMin}` },
+                { name: '院必修課程', val: s.byBucket.foundation },
+                { name: '學系專業課程 ', val: s.byBucket.major },
+                { name: '自由選修', val: s.byBucket.free }
+            ];
+            c.innerHTML = cards.map(x =>
+                `<div class="card"><h4>${x.name}</h4><div class="num">${x.val ?? 0}</div><div class="muted">${x.hint || ''}</div></div>`
+            ).join('');
+        }
+
+
+        function buildFilters(rows) {
+            const selCat = $('#filterCat');
+            const selDom = $('#filterDomain');
+            const cats = Array.from(new Set(rows.map(r => r.category || '').filter(Boolean)));
+            const doms = Array.from(new Set(rows.map(r => r.domain || '').filter(Boolean)));
+            selCat.innerHTML = `<option value="">全部類別</option>` + cats.map(x => `<option>${x}</option>`).join('');
+            selDom.innerHTML = `<option value="">全部領域</option>` + doms.map(x => `<option>${x}</option>`).join('');
+        }
+
+
+        function applyFilters() {
+            if (!raw) return;
+            const q = $('#q').value.trim().toLowerCase();
+            const cat = $('#filterCat').value;
+            const dom = $('#filterDomain').value;
+            const onlyNP = $('#onlyNonPass').checked;
+            viewRows = raw.data.filter(r => {
+                if (cat && r.category !== cat) return false;
+                if (dom && r.domain !== dom) return false;
+                if (onlyNP) { const got = Number(r.earned_credits_course || 0); if (got > 0) return false; }
+                if (q) {
+                    const hay = [r.course?.code, r.course?.name, r.offered_by, r.group, r.req_type].join(' ').toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            });
+            renderTable(viewRows);
+            $('#count').textContent = `顯示 ${viewRows.length} / 共 ${raw.data.length} 列`;
+        }
+
+
+        function renderTable(rows) {
+            const tb = $('#tbl tbody');
+            tb.innerHTML = '';
+            if (!rows.length) return;
+
+
+            // 計算 category / domain 的 run，用於 HTML 的 rowspan
+            const catRuns = computeRuns(rows.map(r => r.category));
+            const domRuns = computeRuns(rows.map(r => r.domain));
+
+
+            rows.forEach((r, i) => {
+                const tr = document.createElement('tr');
+
+
+                // 類別（直向合併）
+                if (catRuns.starts.has(i)) {
+                    const td = document.createElement('td');
+                    td.textContent = r.category || '';
+                    const span = catRuns.span.get(i);
+                    if (span) td.rowSpan = span;
+                    tr.appendChild(td);
+                } else if (!(rows[i - 1] && rows[i - 1].category === r.category && (r.category || '').trim() !== '')) {
+                    // 前一列不同或空，仍需補一格
+                    const td = document.createElement('td'); td.textContent = r.category || ''; tr.appendChild(td);
+                }
+
+
+                // 領域（直向合併）
+                if (domRuns.starts.has(i)) {
+                    const td = document.createElement('td');
+                    td.textContent = r.domain || '';
+                    const span = domRuns.span.get(i);
+                    if (span) td.rowSpan = span;
+                    tr.appendChild(td);
+                } else if (!(rows[i - 1] && rows[i - 1].domain === r.domain && (r.domain || '').trim() !== '')) {
+                    const td = document.createElement('td'); td.textContent = r.domain || ''; tr.appendChild(td);
+                }
+
+
+                // 科目
+                const tdCourse = document.createElement('td');
+                tdCourse.innerHTML = `<div><strong>${r.course?.code ?? ''}</strong> ${r.course?.name ?? ''}</div>`;
+                // 顯示歷次紀錄小標籤
+                if (Array.isArray(r.course?.records) && r.course.records.length) {
+                    const tags = r.course.records.map(rec => `<span class="tag">${rec.term || ''} ${rec.credits ?? ''}</span>`).join(' ');
+                    tdCourse.insertAdjacentHTML('beforeend', `<div class="muted" style="margin-top:4px;">${tags}</div>`);
+                }
+                tr.appendChild(tdCourse);
+
+
+                const mk = (txt) => { const td = document.createElement('td'); td.textContent = txt || ''; return td; };
+                tr.appendChild(mk(r.req_type));
+                tr.appendChild(mk(r.group));
+                tr.appendChild(mk(r.offered_by));
+
+
+                const tdC = mk(r.course_credits != null ? r.course_credits : ''); tdC.className = 'right'; tr.appendChild(tdC);
+                const tdE = mk(r.earned_credits_course != '' ? r.earned_credits_course : '0'); tdE.className = 'right'; tr.appendChild(tdE);
+
+
+                tb.appendChild(tr);
+            });
+        }
+
+
+        async function doParse(fd) {
+            const r = await fetch('/parse', { method: 'POST', body: fd });
+            const j = await r.json();
+            raw = j;
+            renderSummary(j);
+            buildFilters(j.data || []);
+            applyFilters();
+        }
+
+
+        // 事件
+        $('#btnParse').addEventListener('click', async () => {
+            const form = $('#form');
+            const fd = new FormData(form);
+            lastFile = fd.get('htmlFile');
+            if (!lastFile) { alert('請選擇檔案'); return; }
+            await doParse(fd);
+        });
+
+
+        $('#btnDownload').addEventListener('click', async () => {
+            const format = $('#format').value;
+            const form = $('#form');
+            const fd = new FormData(form);
+            if (!fd.get('htmlFile') && lastFile) { fd.set('htmlFile', lastFile); }
+            const resp = await fetch(`/generate?format=${format}`, { method: 'POST', body: fd });
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `checklist.${format}`; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+
+        $('#q').addEventListener('input', applyFilters);
+        $('#filterCat').addEventListener('change', applyFilters);
+        $('#filterDomain').addEventListener('change', applyFilters);
+        $('#onlyNonPass').addEventListener('change', applyFilters);
+    </script>
+</body>
+
+</html>

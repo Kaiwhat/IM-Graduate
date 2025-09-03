@@ -1,0 +1,41 @@
+{
+    "requiredMin": 15,
+    "electiveMin": 30,
+    "generalMin": 16,
+    "graduationTotalMin": 128,
+    "pe": {
+        "requiredCredits": 4,
+        "keywords": [
+            "體育",
+            "運動"
+        ]
+    },
+    "service": {
+        "requiredTimes": 1,
+        "keywords": [
+            "服務學習"
+        ]
+    },
+    "categoryBuckets": [
+        {
+            "match": "全校共同",
+            "bucket": "common"
+        },
+        {
+            "match": "通識",
+            "bucket": "general"
+        },
+        {
+            "match": "基礎院本",
+            "bucket": "foundation"
+        },
+        {
+            "match": "學系專業",
+            "bucket": "major"
+        },
+        {
+            "match": "自由選修",
+            "bucket": "free"
+        }
+    ]
+}
