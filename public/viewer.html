@@ -360,20 +360,6 @@
         });
 
 
-        $('#btnDownload').addEventListener('click', async () => {
-            const format = $('#format').value;
-            const form = $('#form');
-            const fd = new FormData(form);
-            if (!fd.get('htmlFile') && lastFile) { fd.set('htmlFile', lastFile); }
-            const resp = await fetch(`/generate?format=${format}`, { method: 'POST', body: fd });
-            const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `checklist.${format}`; a.click();
-            URL.revokeObjectURL(url);
-        });
-
-
         $('#q').addEventListener('input', applyFilters);
         $('#filterCat').addEventListener('change', applyFilters);
         $('#filterDomain').addEventListener('change', applyFilters);
