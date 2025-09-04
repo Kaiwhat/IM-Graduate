@@ -2,6 +2,11 @@
     "requiredMin": 15,
     "electiveMin": 30,
     "generalMin": 16,
+    "collegeMin": 15,
+    "departmentMin": 30,
+    "submajorMin": 24,
+    "deptElectivesMin": 12,
+    "freeElectivesMin": 16,
     "graduationTotalMin": 128,
     "pe": {
         "requiredCredits": 4,
@@ -18,19 +23,19 @@
     },
     "categoryBuckets": [
         {
-            "match": "全校共同",
+            "match": "全校共同課程",
             "bucket": "common"
         },
         {
-            "match": "通識",
+            "match": "通識領域課程",
             "bucket": "general"
         },
         {
-            "match": "基礎院本",
+            "match": "基礎院本課程",
             "bucket": "foundation"
         },
         {
-            "match": "學系專業",
+            "match": "學系專業課程",
             "bucket": "major"
         },
         {

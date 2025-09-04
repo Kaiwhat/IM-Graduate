@@ -179,9 +179,9 @@
                         <th class="nowrap">類別</th>
                         <th class="nowrap">領域</th>
                         <th>科目</th>
-                        <th class="nowrap">必/選</th>
+                        <!-- <th class="nowrap">必/選</th> -->
                         <th class="nowrap">群</th>
-                        <th>開課單位</th>
+                        <!-- <th>開課單位</th> -->
                         <th class="right nowrap">科目學分</th>
                         <th class="right nowrap">實得學分</th>
                     </tr>
@@ -200,7 +200,6 @@
         let lastFile = null; // 保留上傳檔案供下載產出使用
         let raw = null; // 從 /parse 回來的 JSON
         let viewRows = []; // 經過篩選後的列
-
 
         // 工具：把連續相同值（且非空）切段，回傳 { span: Map(startIndex -> len), starts: Set(startIndex) }
         function computeRuns(arr) {
@@ -290,27 +289,60 @@
 
 
                 // 類別（直向合併）
+                const catLine = (() => {
+                    const sum = (raw && raw.summary) ? raw.summary[r.category] : null;
+                    let html = '';
+                    if (sum && sum.earned != null && sum.required != null) {
+                        html += `<div class="muted" style="font-size:12px;margin-top:4px;">${sum.earned} / ${sum.required}</div>`;
+                        if (Number(sum.earned) != null && Number(sum.required)) {
+                            const ok = Number(sum.earned) >= Number(sum.required);
+                            html += `<div style="font-size:12px;margin-top:2px; color:${ok ? '#16a34a' : '#dc2626'}">${ok ? '已達規定門檻' : '未達規定門檻'}</div>`;
+                        }
+                    }
+                    return html;
+                })();
+
+
                 if (catRuns.starts.has(i)) {
                     const td = document.createElement('td');
-                    td.textContent = r.category || '';
+                    td.innerHTML = (r.category || '') + catLine;
                     const span = catRuns.span.get(i);
                     if (span) td.rowSpan = span;
                     tr.appendChild(td);
                 } else if (!(rows[i - 1] && rows[i - 1].category === r.category && (r.category || '').trim() !== '')) {
                     // 前一列不同或空，仍需補一格
-                    const td = document.createElement('td'); td.textContent = r.category || ''; tr.appendChild(td);
+                    const td = document.createElement('td');
+                    td.innerHTML = (r.category || '') + catLine;
+                    tr.appendChild(td);
                 }
 
 
                 // 領域（直向合併）
+                const domLine = (() => {
+                    const need = (Number.isFinite(r.required_credits_group) ? r.required_credits_group : (typeof r.required_credits_group === 'number' ? r.required_credits_group : null));
+                    const got = (Number.isFinite(r.earned_credits_group) ? r.earned_credits_group : (typeof r.earned_credits_group === 'number' ? r.earned_credits_group : null));
+                    let html = '';
+                    if (need != null || got != null) {
+                        html += `<div class="muted" style="font-size:12px;margin-top:4px;">${got ?? ''} / ${need ?? ''}</div>`;
+                        if (need != null && got != null) {
+                            const ok = Number(got) >= Number(need);
+                            html += `<div style="font-size:12px;margin-top:2px; color:${ok ? '#16a34a' : '#dc2626'}">${ok ? '已達規定門檻' : '未達規定門檻'}</div>`;
+                        }
+                    }
+                    return html;
+                })();
+
+
                 if (domRuns.starts.has(i)) {
                     const td = document.createElement('td');
-                    td.textContent = r.domain || '';
+                    td.innerHTML = (r.domain || '') + domLine;
                     const span = domRuns.span.get(i);
                     if (span) td.rowSpan = span;
                     tr.appendChild(td);
                 } else if (!(rows[i - 1] && rows[i - 1].domain === r.domain && (r.domain || '').trim() !== '')) {
-                    const td = document.createElement('td'); td.textContent = r.domain || ''; tr.appendChild(td);
+                    const td = document.createElement('td');
+                    td.innerHTML = (r.domain || '') + domLine;
+                    tr.appendChild(td);
                 }
 
 
@@ -326,9 +358,9 @@
 
 
                 const mk = (txt) => { const td = document.createElement('td'); td.textContent = txt || ''; return td; };
-                tr.appendChild(mk(r.req_type));
+                // tr.appendChild(mk(r.req_type));
                 tr.appendChild(mk(r.group));
-                tr.appendChild(mk(r.offered_by));
+                // tr.appendChild(mk(r.offered_by));
 
 
                 const tdC = mk(r.course_credits != null ? r.course_credits : ''); tdC.className = 'right'; tr.appendChild(tdC);
