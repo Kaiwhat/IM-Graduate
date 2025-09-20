@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>畢業學分學生自我檢核表 — 列印版</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    table {
+      border-collapse: collapse;
+      border: solid 5px;
+      border-color: #46488e;
+      width: 90%;
+      margin: 20px;
+    }
+
+    td,
+    th {
+      border: 2px solid #808080;
+      padding: 8px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    tr.drop-target {
+      background-color: #f0f8ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="no-print toolbar">
+    <button onclick="window.print()">列印此頁</button>
+    <a href="/viewer.html">← 回檢視頁</a>
+  </div>
+
+  <h1>國立暨南國際大學 資訊管理學系</h1>
+  <h1>畢業學分學生自我檢核表</h1>
+
+  <table id="metaTbl">
+    <thead>
+      <tr>
+        <th style="padding:2px;">姓名</th>
+        <th style="padding:2px;" id="m_name"></th>
+        <th style="padding:2px;">學年</th>
+        <th style="padding:2px;" id="m_sem"></th>
+        <th style="padding:2px;">次領域</th>
+        <th style="padding:2px;" id="m_sub" colspan="2"></th>
+        <th style="padding:2px;" colspan="2">目前已修習學分數</th>
+        <th style="padding:2px;" id="m_earned"></th>
+      </tr>
+      <tr>
+        <th colspan="10">
+          <div class="small">
+            <span id="m_desc"></span>
+          </div>
+        </th>
+      </tr>
+    </thead>
+  </table>
+
+  <table id="listTbl" style="margin-top:8px;">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const $ = (s, el = document) => el.querySelector(s);
+    const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+
+    function loadPayload() {
+      try { return JSON.parse(localStorage.getItem('print_payload') || '{}'); } catch { return {}; }
+    }
+
+    function computeChosen(raw) { return raw?.subdomainReassignment?.chosen || ''; }
+
+    function buildMeta(payload) {
+      const raw = payload.raw || {};
+      $('#m_name').textContent = payload.name || '';
+      $('#m_sem').textContent = payload.semester || '';
+
+      const chosen = payload.submajor || computeChosen(raw) || '';
+      $('#m_sub').textContent = chosen || '';
+
+      // 目前已修習學分數：用 ruleSummary.graduation 或回退加總
+      const earnedTotal = raw?.ruleSummary?.graduation?.earned ?? (raw?.data || []).reduce((a, r) => {
+        const e = Number(r.earned_credits_course ?? 0); return a + (Number.isFinite(e) ? e : 0);
+      }, 0);
+      $('#m_earned').textContent = earnedTotal;
+
+      const sum = raw.summary || {};
+      const totalReq = sum?.graduation_total?.required ?? raw?.ruleSummary?.graduation?.required ?? '';
+
+      // 各桶 required（依校方摘要鍵名）
+      const getRequired = (k) => sum?.[k]?.required ?? '';
+      // const getEarned = (k) => sum?.[k]?.earned ?? '';
+      const line = `本表 ${payload.semester || ''} 學年度入學之學生適用。 最低畢業門檻:${totalReq} 學分,分別為以下：<br>
+        <span style=\"color:#0000FF\">全校共同課程:</span>${getRequired('全校共同課程')}，
+        <span style=\"color:#0000FF\">通識領域課程:</span>${getRequired('通識領域課程')}，
+        <span style=\"color:#0000FF\">院必修:</span>${getRequired('基礎院本課程')}，
+        <span style=\"color:#0000FF\">系必修:</span>${(raw?.data || []).find(r => r.category === '學系專業課程' && r.domain === '系必修')?.required_credits_group || ''}，
+        <span style=\"color:#0000FF\">次領域+系專業選修:</span>${(function () {
+          const majors = (raw?.data || []).filter(r => r.category === '學系專業課程');
+          const one = majors.find(r => r.domain === '資訊技術與系統開發次領域')?.required_credits_group || '';
+          const sel = majors.find(r => r.domain === '系專業選修')?.required_credits_group || '';
+          return one + "+" + sel;
+        })()}，
+        <span style=\"color:#0000FF\">自由選修:</span>${getRequired('自由選修')}`;
+      $('#m_desc').innerHTML = line;
+    }
+
+    function appendRow(tbody, cells) {
+      const tr = document.createElement('tr');
+      cells.forEach(c => {
+        const td = document.createElement(c.header ? 'th' : 'td');
+        if (c.colspan) td.colSpan = c.colspan;
+        if (c.rowspan) td.rowSpan = c.rowspan;
+        td.style.padding = '2px';
+        td.innerHTML = c.html ?? (c.text ?? '');
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+
+    function buildBody(payload) {
+      const raw = payload.raw || {};
+      const rows = raw.data || [];
+      const sum = raw.summary || {};
+      const tbody = $('#listTbl tbody');
+      tbody.innerHTML = '';
+
+      const catOrder = ['全校共同課程', '通識領域課程', '基礎院本課程', '學系專業課程', '自由選修'];
+      const getRequired = (k) => sum?.[k]?.required ?? '';
+      const getEarned = (k) => sum?.[k]?.earned ?? '';
+
+      catOrder.forEach(cat => {
+        const items = rows.filter(r => (r.category || '').trim() === cat);
+        if (!items.length) return;
+
+        if (cat === '全校共同課程' || cat === '基礎院本課程' || cat === '自由選修') {
+          // 類別 + 每列一個科目名稱
+          appendRow(tbody, [
+            { text: cat + "<br>" + (getEarned(cat) + "/" + getRequired(cat)), rowspan: Math.max(1, items.length), colspan: 2, header: true },
+            { text: items[0]?.course?.name + " " + items[0]?.earned_credits_course + " 學分" || '', colspan: 8 }
+          ]);
+          for (let i = 1; i < items.length; i++) {
+            appendRow(tbody, [{ text: items[i].course?.name + " " + items[i]?.earned_credits_course + " 學分" || '', colspan: 8 }]);
+          }
+          if (items.length === 1) {
+            appendRow(tbody, [{ text: '...', colspan: 8 }]);
+          }
+        } else if (cat === '通識領域課程') {
+          // 依 domain 分組，列出 group 與課名
+          const byDom = new Map();
+          items.forEach(r => {
+            const d = (r.domain || '').trim();
+            const arr = byDom.get(d) || []; arr.push(r); byDom.set(d, arr);
+          });
+          let firstInCat = true;
+          byDom.forEach((arr, dom) => {
+            // 每個 domain 至少兩列；顯示 group 與課名
+            const spanDomain = Math.max(2, arr.length);
+            if (firstInCat) {
+              appendRow(tbody, [
+                { text: cat, rowspan: Math.max(2, items.length), colspan: 2, header: true },
+                { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
+                { text: arr[0]?.group || '', colspan: 3 },
+                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 3 }
+              ]);
+              firstInCat = false;
+            } else {
+              appendRow(tbody, [
+                { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
+                { text: arr[0]?.group || '', colspan: 3 },
+                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 3 }
+              ]);
+            }
+            for (let i = 1; i < arr.length; i++) {
+              appendRow(tbody, [
+                { text: arr[i]?.group || '', colspan: 3 },
+                { text: arr[i]?.course?.name + " " + arr[i]?.earned_credits_course + " 學分" || '', colspan: 3 }
+              ]);
+            }
+            if (arr.length < 2) {
+              appendRow(tbody, [
+                { text: arr[0]?.group || '', colspan: 3 },
+                { text: '...', colspan: 3 }
+              ]);
+            }
+          });
+        } else if (cat === '學系專業課程') {
+          // 排序：系必修 → 擇一次領域（實名）→ 系專業選修 → 其他
+          const chosen = computeChosen(raw);
+          const pr = r => {
+            const d = (r.domain || '').trim();
+            if (d === '系必修') return 1;
+            if (d === chosen) return 2;
+            if (d === '系專業選修') return 3;
+            return 4;
+          };
+          const sorted = items.slice().sort((a, b) => pr(a) - pr(b) || (a.rid - b.rid));
+
+          // 依 domain 分組，輸出：類別(2col) + domain(2col, rowspan) + 課名(6col)
+          const byDom = new Map();
+          sorted.forEach(r => { const d = (r.domain || '').trim(); const arr = byDom.get(d) || []; arr.push(r); byDom.set(d, arr); });
+
+          let firstInCat = true;
+          byDom.forEach((arr, dom) => {
+            const spanDomain = Math.max(3, arr.length); // 模板示意最少 3 列
+            const domName = dom; // 如需顯示「任一次領域（dom）」可改此行
+            if (firstInCat) {
+              appendRow(tbody, [
+                { text: cat, rowspan: Math.max(3, items.length), colspan: 2, header: true },
+                { text: domName + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
+                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 6 }
+              ]);
+              firstInCat = false;
+            } else {
+              appendRow(tbody, [
+                { text: domName + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
+                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 6 }
+              ]);
+            }
+            for (let i = 1; i < arr.length; i++) {
+              appendRow(tbody, [{ text: arr[i]?.course?.name + " " + arr[i]?.earned_credits_course + " 學分" || '', colspan: 6 }]);
+            }
+            if (arr.length < 3) {
+              for (let k = arr.length; k < 3; k++) appendRow(tbody, [{ text: '...', colspan: 6 }]);
+            }
+          });
+        }
+      });
+
+      appendRow(tbody, [{ text: "<br><br><br>通識講座<br><br><br>", colspan: 2 }, { text: "", colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br><br><br>英文畢業門檻<br><br><br>", colspan: 2 }, { text: "<br><br><br><br>請手寫是否已通過英文畢業門檻,例:1091多益通過、尚未通過......等等。", colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br><br><br>備註<br>(供手動認抵學分用)<br><br><br>", colspan: 2 }, { text: "<br><br><br><br>務必請授課老師親簽或蓋章,代表同意抵免課程,以利系辦複核", colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br><br>學號:<br>學生簽名:<br><br>", colspan: 2 }, { text: "", colspan: 3 }, { text: "系辦複核:", colspan: 2 }, { text: "", colspan: 3 }]);
+    }
+
+    (function init() {
+      const payload = loadPayload();
+      if (!payload || !payload.raw) {
+        alert('找不到解析資料，請先到檢視頁載入。');
+        location.href = '/viewer.html';
+        return;
+      }
+      buildMeta(payload);
+      buildBody(payload);
+    })();
+  </script>
+</body>
+
+</html>

@@ -158,8 +158,13 @@
                 <button id="btnParse">解析</button>
                 <span class="spacer"></span>
                 <a href="/upload.html" class="muted">回「產生器」頁</a>
-                <a href="/dnd.html" class="muted">去「編輯」頁</a>
             </form>
+            <div class="toolbar" style="gap:10px;">
+                <input id="stuName" placeholder="學生姓名" />
+                <input id="stuYear" placeholder="學年度（例：113）" />
+                <input id="stuSubmajor" placeholder="次領域（預設抓擇一）" />
+                <button id="btnPrintView">開啟「列印版」</button>
+            </div>
         </div>
         <div id="summary" class="cards"></div>
 
@@ -449,6 +454,19 @@
             lastFile = fd.get('htmlFile');
             if (!lastFile) { alert('請選擇檔案'); return; }
             await doParse(fd);
+        });
+
+        // 列印版引導：把目前解析結果 + 使用者輸入存到 localStorage 再跳頁
+        $('#btnPrintView').addEventListener('click', () => {
+            if (!raw) { alert('請先解析一份課程 HTML'); return; }
+            const payload = {
+                raw,
+                name: $('#stuName').value.trim() || '',
+                semester: $('#stuYear').value.trim() || '',
+                submajor: $('#stuSubmajor').value.trim() || (raw?.subdomainReassignment?.chosen || '')
+            };
+            try { localStorage.setItem('print_payload', JSON.stringify(payload)); } catch { }
+            location.href = '/print.html';
         });
 
 
