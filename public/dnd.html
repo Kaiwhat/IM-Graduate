@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Drag & Drop Table</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    table {
+      border-collapse: collapse;
+      border: solid 5px;
+      border-color: #46488e;
+      width: 90%;
+      margin: 20px;
+    }
+
+    td,
+    th {
+      border: 2px solid #808080;
+      padding: 8px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    tr.drop-target {
+      background-color: #f0f8ff;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>國立暨南國際大學 資訊管理學系</h1>
+  <h1>畢業學分學生自我檢核表</h1>
+  <table>
+    <thead class="thead-light" style="
+                    display: table;
+                    width: 100%;
+                    table-layout: fixed;
+                ">
+      <tr>
+        <th style="padding:2px;">姓名</th>
+        <th style="padding:2px;">{name}</th>
+        <th style="padding:2px;">學年</th>
+        <th style="padding:2px;">{semester}</th>
+        <th style="padding:2px;">次領域</th>
+        <th style="padding:2px;" colspan="2">{submajor}</th>
+        <th style="padding:2px;" colspan="2">目前已修習學分數</th>
+        <th style="padding:2px;">{earned}</th>
+      </tr>
+      <tr>
+        <th style="padding:2px;" ;="" colspan="10">
+          <div class="alert school-alert-warning" role="alert" style="margin-bottom:0">
+            <font class="" style="" id="">
+              <span style="font-size:16px">本表 {semester} 學年度入學之學生適用。
+                最低畢業門檻:{summary.graduation_total.required} 學分,分別為以下:<br>
+                <font style="color:#0000FF">全校共同課程:</font>earned,
+                <font style="color:#0000FF">通識領域課程:</font>earned,
+                <font style="color:#0000FF">院必修:</font>earned,
+                <font style="color:#0000FF">系必修:</font>earned,
+                <font style="color:#0000FF">次領域+系專業選修:</font>earned,
+                <font style="color:#0000FF">自由選修:</font>earned
+              </span>
+            </font>
+          </div>
+        </th>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="9">全校共同課程</td>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="9">通識領域課程</td>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="2">人文(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3">人文-文學與藝術(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="3">人文-歷史哲學與文化(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="2">社會(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3">社會-法政與教育(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="3">社會-社經與管理(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="2">自然(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3">自然-工程與科技(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="3">自然-生命與科學(105始)</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="3">特色通識(105始)
+        </td>
+        <td style="padding:2px;" ;="" colspan="3">特色通識-國際連結(東南亞)105始</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="3">特色通識-淨零永續(綠概念)105始</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="3">特色通識-社會創新(在地實踐)105始</td>
+        <td style="padding:2px;" ;="" colspan="3" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="9">院必修</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="9">系必修</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="16">系專業選修</td>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="8">資訊技術與系統開發次領域</td>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="8">其他次領域</td>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="6" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr style="height: 100px;">
+        <td style="padding:2px;" ;="" colspan="2">其他課程</td>
+        <td style="padding:2px;" ;="" colspan="8">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="2" rowspan="6">通識講座</td>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:2px;" ;="" colspan="8" rowspan="1">{coures.name}</td>
+      </tr>
+      <tr style="height: 100px;">
+        <td style="padding:2px;" ;="" colspan="2">英文畢業門檻</td>
+        <td style="padding:2px;" ;="" colspan="8">{}</td>
+      </tr>
+      <tr style="height: 100px;">
+        <td style="padding:2px;" ;="" colspan="2">備註</td>
+        <td style="padding:2px;" ;="" colspan="8">{}</td>
+      </tr>
+
+      <tr style="height: 100px; width: 100%;">
+        <td style="padding:20px; text-align: start;" ;="" colspan="5">學號：<br>學生簽名：</td>
+        <td style="padding:20px; text-align: start;" ;="" colspan="5">系辦覆核：</td>
+      </tr>
+    </thead>
+  </table>
+</body>
+
+</html>

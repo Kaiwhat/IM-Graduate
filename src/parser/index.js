@@ -17,6 +17,17 @@ const HEADER_KEY_MAP = {
   // 最後一欄空白就忽略
 };
 
+// 「學系專業課程」中，兩個次領域擇一達 24 學分；其餘（含另一次領域全部 + 超過 24 的部分）→ 系專業選修
+const MAJOR_REALLOCATION = {
+  category: '學系專業課程',
+  subA: '資訊技術與系統開發次領域',
+  subB: '資訊管理與決策科學次領域',
+  threshold: 24,
+  targetDomain: '系專業選修',
+  countOnlyEarned: true, // 只重分類已取得學分（實得>0）
+  tiePrefer: '資訊技術與系統開發次領域' // 若兩邊都達門檻且相同分數，優先這個
+};
+
 // === Utils: 尋找目標 table（依你的 CSS 類別與屬性） ===
 function findTargetTable($) {
   let $table = $('table.table.table-responsive[border="1"]').first();
@@ -110,7 +121,67 @@ function normalizeRowsByRowspan($, $tbody, logicalColCount) {
   return out;
 }
 
+function reassignMajorSubdomains(rows) {
+  const cfg = MAJOR_REALLOCATION;
+  const isMajor = r => (r.category || '').trim() === cfg.category;
+  const isSubA  = r => (r.domain || '').trim() === cfg.subA;
+  const isSubB  = r => (r.domain || '').trim() === cfg.subB;
+  const earnedOf = r => Number(r.earned_credits_course) || 0;
 
+  const majorRows = rows.filter(isMajor);
+  const rowsA = majorRows.filter(isSubA);
+  const rowsB = majorRows.filter(isSubB);
+
+  const sum = arr => arr.reduce((acc, r) => acc + earnedOf(r), 0);
+  const aEarn = sum(rowsA);
+  const bEarn = sum(rowsB);
+
+  // 決定哪個次領域當作「完成」者
+  let chosen = null;
+  if (aEarn >= cfg.threshold || bEarn >= cfg.threshold) {
+    if (aEarn === bEarn) chosen = cfg.tiePrefer;
+    else chosen = aEarn > bEarn ? cfg.subA : cfg.subB;
+  }
+
+  let movedCount = 0, movedCredits = 0;
+  if (chosen) {
+    // 1) 被選中的次領域：保留達到門檻所需的前幾門（依原始順序）；其餘（超過門檻）改掛「系專業選修」
+    const keepRows = (chosen === cfg.subA ? rowsA : rowsB);
+    let acc = 0;
+    keepRows.forEach(r => {
+      const e = earnedOf(r);
+      const canCount = cfg.countOnlyEarned ? e > 0 : true;
+      if (!canCount) return;  // 修課中(0分)保留原領域，不動
+      if (acc >= cfg.threshold) {
+        r.domain_reassigned_from = r.domain;
+        r.domain = cfg.targetDomain;
+        movedCount++; movedCredits += e;
+      } else {
+        acc += e; // 還在湊 24 的區間，保留原次領域
+      }
+    });
+
+    // 2) 另一次領域：所有已取得學分的課，直接改掛「系專業選修」
+    const otherRows = chosen === cfg.subA ? rowsB : rowsA;
+    otherRows.forEach(r => {
+      const e = earnedOf(r);
+      const canCount = cfg.countOnlyEarned ? e > 0 : true;
+      if (!canCount) return;
+      r.domain_reassigned_from = r.domain;
+      r.domain = cfg.targetDomain;
+      movedCount++; movedCredits += e;
+    });
+  }
+
+  return {
+    enabled: true,
+    chosen,                                  // 被選中的次領域（或 null=尚未達門檻）
+    threshold: cfg.threshold,
+    totals: { [cfg.subA]: aEarn, [cfg.subB]: bEarn },
+    movedCount, movedCredits,
+    target: cfg.targetDomain
+  };
+}
 
 // 科目名稱欄位的精細解析（抓課號/課名/歷次修課紀錄）
 function parseCourseCell($, tdHtml) {
@@ -224,6 +295,14 @@ function parseCoursesTable($, $table) {
     return obj;
   });
 
+  // ★ 新增：套用次領域重分類
+  let subdomainReassignment = null;
+  try {
+    subdomainReassignment = reassignMajorSubdomains(data);
+  } catch (e) {
+    subdomainReassignment = { enabled: true, error: String(e) };
+  }
+
   // 取最下方 thead 的「畢業總學分數」（簡要摘要）
   const summary = {};
   $table.find('thead').each((_, th) => {
@@ -247,7 +326,8 @@ function parseCoursesTable($, $table) {
     columns: headers.map(h => ({ title: h, key: HEADER_KEY_MAP[h] || null })),
     count: data.length,
     data,
-    summary
+    summary,
+    subdomainReassignment // ★ 回傳 meta，方便你在 viewer 或除錯使用
   };
 }
 

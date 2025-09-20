@@ -158,6 +158,7 @@
                 <button id="btnParse">解析</button>
                 <span class="spacer"></span>
                 <a href="/upload.html" class="muted">回「產生器」頁</a>
+                <a href="/dnd.html" class="muted">去「編輯」頁</a>
             </form>
         </div>
         <div id="summary" class="cards"></div>
@@ -268,6 +269,28 @@
                 }
                 return true;
             });
+            // === 只在「學系專業課程」內部做重排，避免系專業選修被分裂 ===
+            const chosen = raw?.subdomainReassignment?.chosen || null;
+            const isMajor = r => (r.category || '').trim() === '學系專業課程';
+            const prio = r => {
+                if (!isMajor(r)) return 0; // 非該類別不動排序
+                const d = (r.domain || '').trim();
+                if (d === '系必修') return 1;
+                if (chosen && d === chosen) return 2; // 任一次領域（實際名稱為 chosen）
+                if (d === '系專業選修') return 3;
+                return 4; // 其他次領域或未分配
+            };
+            // 只重排屬於該類別的項目，維持其他列位置
+            const idxs = [];
+            const majors = [];
+            viewRows.forEach((r, i) => { if (isMajor(r)) { idxs.push(i); majors.push(r); } });
+            majors.sort((a, b) => {
+                const pa = prio(a), pb = prio(b);
+                if (pa !== pb) return pa - pb;
+                return (a.rid ?? 0) - (b.rid ?? 0); // 同群以原始順序（rid）穩定排序
+            });
+            idxs.forEach((i, k) => { viewRows[i] = majors[k]; });
+
             renderTable(viewRows);
             $('#count').textContent = `顯示 ${viewRows.length} / 共 ${raw.data.length} 列`;
         }
@@ -281,6 +304,10 @@
 
             // 計算 category / domain 的 run，用於 HTML 的 rowspan
             const catRuns = computeRuns(rows.map(r => r.category));
+            // 讓被選中的次領域以「任一次領域」名義顯示，並與排序一致
+            const chosen = raw?.subdomainReassignment?.chosen || null;
+            const isMajorRow = r => (r.category || '').trim() === '學系專業課程';
+            const domainLabels = rows.map(r => (isMajorRow(r) && chosen && (r.domain || '').trim() === chosen) ? '任一次領域' : (r.domain || ''));
             const domRuns = computeRuns(rows.map(r => r.domain));
 
 
@@ -288,18 +315,13 @@
                 const tr = document.createElement('tr');
 
 
-                // 類別（直向合併）
+                // 類別（直向合併 + 顯示 earned/required）
                 const catLine = (() => {
                     const sum = (raw && raw.summary) ? raw.summary[r.category] : null;
-                    let html = '';
                     if (sum && sum.earned != null && sum.required != null) {
-                        html += `<div class="muted" style="font-size:12px;margin-top:4px;">${sum.earned} / ${sum.required}</div>`;
-                        if (Number(sum.earned) != null && Number(sum.required)) {
-                            const ok = Number(sum.earned) >= Number(sum.required);
-                            html += `<div style="font-size:12px;margin-top:2px; color:${ok ? '#16a34a' : '#dc2626'}">${ok ? '已達規定門檻' : '未達規定門檻'}</div>`;
-                        }
+                        return `<div class="muted" style="font-size:12px;margin-top:4px;">${sum.earned} / ${sum.required}</div>`;
                     }
-                    return html;
+                    return '';
                 })();
 
 
@@ -331,6 +353,10 @@
                     }
                     return html;
                 })();
+
+                const domText = (isMajorRow(r) && chosen && (r.domain || '').trim() === chosen)
+                    ? `任一次領域<span class="muted">（${chosen}）</span>`
+                    : (r.domain || '');
 
 
                 if (domRuns.starts.has(i)) {
@@ -369,6 +395,7 @@
 
                 tb.appendChild(tr);
             });
+            localStorage.setItem("courseRows", JSON.stringify(rows));
         }
 
 
