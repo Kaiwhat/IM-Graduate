@@ -310,6 +310,30 @@
             const domainLabels = rows.map(r => (isMajorRow(r) && chosen && (r.domain || '').trim() === chosen) ? '任一次領域' : (r.domain || ''));
             const domRuns = computeRuns(rows.map(r => r.domain));
 
+            // === 針對「學系專業課程」：用 reassign 後的資料重新彙總各領域的 earned/required ===
+            const domainAgg = (() => {
+                const map = new Map();
+                const all = raw?.data || [];
+                const chosenAll = raw?.subdomainReassignment?.chosen || null;
+                const alias = chosenAll ? '任一次領域' : null;
+                const threshold = raw?.subdomainReassignment?.threshold ?? 24;
+                const isMajorAll = rr => (rr.category || '').trim() === '學系專業課程';
+                all.forEach(rr => {
+                    if (!isMajorAll(rr)) return;
+                    let label = (rr.domain || '').trim();
+                    if (alias && label === chosenAll) label = alias; // 被選中的次領域 → 任一次領域
+                    const got = Number(rr.earned_credits_course ?? 0);
+                    const cur = map.get(label) || { earned: 0, required: null };
+                    cur.earned += Number.isFinite(got) ? got : 0;
+                    if (label === alias) {
+                        cur.required = threshold; // 任一次領域固定門檻
+                    } else if (cur.required == null && rr.required_credits_group != null) {
+                        cur.required = rr.required_credits_group; // 取第一個出現的須修學分
+                    }
+                    map.set(label, cur);
+                });
+                return map;
+            })();
 
             rows.forEach((r, i) => {
                 const tr = document.createElement('tr');
@@ -338,14 +362,28 @@
                     tr.appendChild(td);
                 }
 
+                // 領域（直向合併 + 顯示 earned/required + 門檻提示）
+                const domText = (isMajorRow(r) && chosen && (r.domain || '').trim() === chosen)
+                    ? `任一次領域<span class="muted">（${chosen}）</span>`
+                    : (r.domain || '');
 
-                // 領域（直向合併）
+                // 以彙總後的 domainAgg（全資料集）為主；非學系專業課程則退回單列數值
+                let need = null, got = null;
+                const labelKey = domainLabels[i];
+                if (isMajorRow(r) && domainAgg.has(labelKey)) {
+                    const agg = domainAgg.get(labelKey);
+                    need = agg.required;
+                    got = agg.earned;
+                } else {
+                    // fallback 單列
+                    need = (Number.isFinite(r.required_credits_group) ? r.required_credits_group : (typeof r.required_credits_group === 'number' ? r.required_credits_group : null));
+                    got = (Number.isFinite(r.earned_credits_group) ? r.earned_credits_group : (typeof r.earned_credits_group === 'number' ? r.earned_credits_group : null));
+                }
+
                 const domLine = (() => {
-                    const need = (Number.isFinite(r.required_credits_group) ? r.required_credits_group : (typeof r.required_credits_group === 'number' ? r.required_credits_group : null));
-                    const got = (Number.isFinite(r.earned_credits_group) ? r.earned_credits_group : (typeof r.earned_credits_group === 'number' ? r.earned_credits_group : null));
                     let html = '';
                     if (need != null || got != null) {
-                        html += `<div class="muted" style="font-size:12px;margin-top:4px;">${got ?? ''} / ${need ?? ''}</div>`;
+                        html += `<div class="muted" style="font-size:12px;margin-top:4px;">${(got ?? '')} / ${(need ?? '')}</div>`;
                         if (need != null && got != null) {
                             const ok = Number(got) >= Number(need);
                             html += `<div style="font-size:12px;margin-top:2px; color:${ok ? '#16a34a' : '#dc2626'}">${ok ? '已達規定門檻' : '未達規定門檻'}</div>`;
@@ -353,11 +391,6 @@
                     }
                     return html;
                 })();
-
-                const domText = (isMajorRow(r) && chosen && (r.domain || '').trim() === chosen)
-                    ? `任一次領域<span class="muted">（${chosen}）</span>`
-                    : (r.domain || '');
-
 
                 if (domRuns.starts.has(i)) {
                     const td = document.createElement('td');
