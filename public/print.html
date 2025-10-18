@@ -18,7 +18,7 @@
       border: solid 5px;
       border-color: #46488e;
       width: 90%;
-      margin: 20px;
+      font-size: 13px;
     }
 
     td,
@@ -26,7 +26,6 @@
       border: 2px solid #808080;
       padding: 8px;
       text-align: center;
-      min-width: 100px;
     }
 
     tr.drop-target {
@@ -36,13 +35,7 @@
 </head>
 
 <body>
-  <div class="no-print toolbar">
-    <button onclick="window.print()">列印此頁</button>
-    <a href="/viewer.html">← 回檢視頁</a>
-  </div>
-
-  <h1>國立暨南國際大學 資訊管理學系</h1>
-  <h1>畢業學分學生自我檢核表</h1>
+  <h2 style="text-align: center;">國立暨南國際大學 資訊管理學系<br>畢業學分學生自我檢核表</h2>
 
   <table id="metaTbl">
     <thead>
@@ -196,43 +189,85 @@
             }
           });
         } else if (cat === '學系專業課程') {
-          // 排序：系必修 → 擇一次領域（實名）→ 系專業選修 → 其他
+          // 使用 parser 的 reassign 結果：將被選中的次領域顯示為「任一次領域」
           const chosen = computeChosen(raw);
-          const pr = r => {
+          const alias = chosen ? '任一次領域' : null;
+          const threshold = raw?.subdomainReassignment?.threshold ?? 24;
+
+          // 對每列加上顯示用的 label（被選中的次領域 → 任一次領域）
+          const itemsRe = items.map(r => {
             const d = (r.domain || '').trim();
-            if (d === '系必修') return 1;
-            if (d === chosen) return 2;
-            if (d === '系專業選修') return 3;
+            const label = (alias && d === chosen) ? alias : d;
+            return { ...r, __label: label };
+          });
+
+          // 彙總各領域 earned/required（以 reassign 後的 label）
+          const domainAgg = new Map();
+          itemsRe.forEach(rr => {
+            const key = rr.__label;
+            const got = Number(rr.earned_credits_course ?? 0);
+            const cur = domainAgg.get(key) || { earned: 0, required: null, realName: null };
+            cur.earned += Number.isFinite(got) ? got : 0;
+            if (key === alias) {
+              cur.required = threshold;         // 任一次領域固定門檻
+              cur.realName = chosen;            // 記下實際次領域名稱
+            } else if (cur.required == null && rr.required_credits_group != null) {
+              cur.required = rr.required_credits_group; // 其他領域取第一筆的須修學分
+            }
+            domainAgg.set(key, cur);
+          });
+
+          // 排序：系必修 → 任一次領域 → 系專業選修 → 其他（同群以 rid 保持穩定）
+          const pr = r => {
+            const label = r.__label;
+            if (label === '系必修') return 1;
+            if (alias && label === alias) return 2;
+            if (label === '系專業選修') return 3;
             return 4;
           };
-          const sorted = items.slice().sort((a, b) => pr(a) - pr(b) || (a.rid - b.rid));
+          const sorted = itemsRe.slice().sort((a, b) => pr(a) - pr(b) || (a.rid - b.rid));
 
-          // 依 domain 分組，輸出：類別(2col) + domain(2col, rowspan) + 課名(6col)
+          // 依 label 分組，輸出：類別(2col) + 領域(2col, rowspan) + 課名(6col)
           const byDom = new Map();
-          sorted.forEach(r => { const d = (r.domain || '').trim(); const arr = byDom.get(d) || []; arr.push(r); byDom.set(d, arr); });
+          sorted.forEach(r => {
+            const key = r.__label;
+            const arr = byDom.get(key) || [];
+            arr.push(r);
+            byDom.set(key, arr);
+          });
 
           let firstInCat = true;
-          byDom.forEach((arr, dom) => {
-            const spanDomain = Math.max(3, arr.length); // 模板示意最少 3 列
-            const domName = dom; // 如需顯示「任一次領域（dom）」可改此行
+          byDom.forEach((arr, label) => {
+            const spanDomain = Math.max(3, arr.length); // 最少 3 行以符合模板視覺
+            const agg = domainAgg.get(label) || { earned: 0, required: null, realName: null };
+            const domName = (label === alias && agg.realName)
+              ? `${agg.realName}`
+              : label;
+            const domHeaderHtml = `${domName}<br>${agg.earned} / ${agg.required ?? ''}`;
+
             if (firstInCat) {
               appendRow(tbody, [
                 { text: cat, rowspan: Math.max(3, items.length), colspan: 2, header: true },
-                { text: domName + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
-                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 6 }
+                { html: domHeaderHtml, rowspan: spanDomain, colspan: 2, header: true },
+                { text: (arr[0]?.course?.name || '') + ' ' + ((arr[0]?.earned_credits_course ?? '') + ' 學分'), colspan: 6 }
               ]);
               firstInCat = false;
             } else {
               appendRow(tbody, [
-                { text: domName + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
-                { text: arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" || '', colspan: 6 }
+                { html: domHeaderHtml, rowspan: spanDomain, colspan: 2, header: true },
+                { text: (arr[0]?.course?.name || '') + ' ' + ((arr[0]?.earned_credits_course ?? '') + ' 學分'), colspan: 6 }
               ]);
             }
+
             for (let i = 1; i < arr.length; i++) {
-              appendRow(tbody, [{ text: arr[i]?.course?.name + " " + arr[i]?.earned_credits_course + " 學分" || '', colspan: 6 }]);
+              appendRow(tbody, [
+                { text: (arr[i]?.course?.name || '') + ' ' + ((arr[i]?.earned_credits_course ?? '') + ' 學分'), colspan: 6 }
+              ]);
             }
             if (arr.length < 3) {
-              for (let k = arr.length; k < 3; k++) appendRow(tbody, [{ text: '...', colspan: 6 }]);
+              for (let k = arr.length; k < 3; k++) {
+                appendRow(tbody, [{ text: '...', colspan: 6 }]);
+              }
             }
           });
         }
