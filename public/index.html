@@ -157,7 +157,7 @@
                 <input type="file" name="htmlFile" accept=".html,.htm" required />
                 <button id="btnParse">解析</button>
                 <span class="spacer"></span>
-                <a href="/upload.html" class="muted">回「產生器」頁</a>
+                <!-- <a href="/upload.html" class="muted">回「產生器」頁</a> -->
             </form>
             <div class="toolbar" style="gap:10px;">
                 <input id="stuName" placeholder="學生姓名" />
@@ -194,6 +194,18 @@
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+
+        <div id="infobox" style="display: block;">
+            <h3>使用方式&須知：</h3>
+            <li>由於新校務系統輸出的畢業學分審查與資管系的修業規則（次領域部分）有些不同，可以用這套系統看適用資管系的修業規則</li>
+            <li>請先去新世代校務系統 <a href="https://sis.ncnu.edu.tw/">https://sis.ncnu.edu.tw/</a></li>
+            <li>左方教務資訊/修業進度管制，按下查詢</li>
+            <li>在頁面右鍵/另存新檔 or 在頁面 Crtl+S/Command+S 儲存整個網頁</li>
+            <li>在左上角上傳你剛剛儲存的檔案，按下解析即可看到目前修課狀況</li>
+            <li>按下開啟「列印版」即可輸出成「畢業學分學生自我檢核表」</li>
+            <li>在開啟「列印版」還是先幫我先按下「解析」歐！</li>
+            <img src="example.png" style="width: 100%;">
         </div>
     </div>
 
@@ -245,6 +257,7 @@
             c.innerHTML = cards.map(x =>
                 `<div class="card"><h4>${x.name}</h4><div class="num">${x.val ?? 0}</div><div class="muted">${x.hint || ''}</div></div>`
             ).join('');
+            document.getElementById('infobox').style.display = "none";
         }
 
 
