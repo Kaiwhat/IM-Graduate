@@ -17,8 +17,8 @@
       border-collapse: collapse;
       border: solid 5px;
       border-color: #46488e;
-      width: 90%;
-      font-size: 13px;
+      width: 95%;
+      font-size: 16px;
     }
 
     td,
@@ -273,8 +273,8 @@
         }
       });
 
-      appendRow(tbody, [{ text: "<br><br><br>通識講座<br><br><br>", colspan: 2 }, { text: "", colspan: 8 }]);
-      appendRow(tbody, [{ text: "<br><br><br>英文畢業門檻<br><br><br>", colspan: 2 }, { text: "<br><br><br><br>請手寫是否已通過英文畢業門檻,例:1091多益通過、尚未通過......等等。", colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br><br><br>通識講座<br><br><br>", colspan: 2 }, { text: sum.lecture, colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br><br><br>英文畢業門檻<br><br><br>", colspan: 2 }, { text: sum.english, colspan: 8 }]);
       appendRow(tbody, [{ text: "<br><br><br>備註<br>(供手動認抵學分用)<br><br><br>", colspan: 2 }, { text: "<br><br><br><br>務必請授課老師親簽或蓋章,代表同意抵免課程,以利系辦複核", colspan: 8 }]);
       appendRow(tbody, [{ text: "<br><br>學號:<br>學生簽名:<br><br>", colspan: 2 }, { text: "", colspan: 3 }, { text: "系辦複核:", colspan: 2 }, { text: "", colspan: 3 }]);
     }

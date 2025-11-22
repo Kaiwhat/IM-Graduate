@@ -28,7 +28,7 @@ const MAJOR_REALLOCATION = {
   tiePrefer: '資訊技術與系統開發次領域' // 若兩邊都達門檻且相同分數，優先這個
 };
 
-// === Utils: 尋找目標 table（依你的 CSS 類別與屬性） ===
+// ===Utils: 尋找目標 table===
 function findTargetTable($) {
   let $table = $('table.table.table-responsive[border="1"]').first();
   if ($table.length) return $table;
@@ -42,6 +42,27 @@ function getDeptTitle($, $table) {
   // 第一個 thead 的 h3 通常是「資訊管理學系」
   const t = $table.find('thead h3').first().text().trim();
   return t || null; 
+}
+
+// 透過標題 <h6> 文字「學號」、「姓名」來自動取得後方的 <span> 內容
+function getStudentInfo($) {
+  // 取得所有 <h6>
+  let $h6List = $('h6');
+
+  // 若不到兩個，直接返回
+  if ($h6List.length < 2) return null;
+
+  // ➜ 對應你的 DOM 結構：
+  // h6 → parent → parent → next sibling span
+  function getSpanTextFromH6($h6) {
+    return $h6.parent().parent().next().text().trim();
+  }
+
+  const studentId = getSpanTextFromH6($h6List.eq(0));
+  const studentName = getSpanTextFromH6($h6List.eq(1));
+  const studentClass = getSpanTextFromH6($h6List.eq(2));
+
+  return { studentId, studentName, studentClass };
 }
 
 function findHeaderFromThead($, $table) {
@@ -221,8 +242,9 @@ function parseCourseCell($, tdHtml) {
 }
 
 
-// 主解析器（只吃第一個 <tbody>，並產出漂亮 JSON）
+// 主解析器（吃 <tbody>，並產出漂亮 JSON）
 function parseCoursesTable($, $table) {
+  const studentInfo = getStudentInfo($);
   const title = getDeptTitle($, $table);
   const headers = findHeaderFromThead($, $table);
   const logicalColCount = headers.length || 13;
@@ -303,7 +325,7 @@ function parseCoursesTable($, $table) {
     subdomainReassignment = { enabled: true, error: String(e) };
   }
 
-  // 取最下方 thead 的「畢業總學分數」（簡要摘要）
+  // 取最下方 thead 的「畢業總學分數」
   const summary = {};
   $table.find('thead').each((_, th) => {
     const txt = $(th).text().replace(/\s+/g,' ').trim();
@@ -321,8 +343,24 @@ function parseCoursesTable($, $table) {
     });
   });
 
+  const lectureTd = $table.find('td').filter((_, el) => {
+    return $(el).text().includes('通識講座');
+  }).first();
+
+  const EnglishTestTd = $table.find('td').filter((_, el) => {
+    return $(el).text().includes('英文能力：');
+  }).first();
+
+  if (lectureTd.length > 0) {
+    summary.lecture = lectureTd.text().trim();
+  }
+
+  if (EnglishTestTd.length > 0) {
+    summary.english = EnglishTestTd.text().trim();
+  }
+
   return {
-    meta: { title },
+    meta: { title, studentInfo },
     columns: headers.map(h => ({ title: h, key: HEADER_KEY_MAP[h] || null })),
     count: data.length,
     data,

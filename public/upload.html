@@ -62,7 +62,6 @@
             <textarea id="frag" style="width:100%;height:140px;font-family:ui-monospace,monospace;"></textarea>
             <div class="row" style="margin-top:.5rem;">
                 <button id="parseFrag">解析片段(JSON)</button>
-                <button id="genFrag">下載檢核表(用片段)</button>
             </div>
         </details>
 
@@ -73,7 +72,6 @@
         const form = document.getElementById('form');
         const out = document.getElementById('out');
         const fmt = document.getElementById('format');
-        const gen = document.getElementById('gen');
         const frag = document.getElementById('frag');
 
 
@@ -87,17 +85,6 @@
         });
 
 
-        gen.addEventListener('click', async () => {
-            const fd = new FormData(form);
-            const r = await fetch(`/generate?format=${fmt.value}`, { method: 'POST', body: fd });
-            const blob = await r.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `checklist.${fmt.value}`; a.click();
-            URL.revokeObjectURL(url);
-        });
-
-
         document.getElementById('parseFrag').addEventListener('click', async () => {
             out.textContent = '解析中...';
             const r = await fetch('/parse', {
@@ -107,20 +94,6 @@
             });
             const j = await r.json();
             out.innerHTML = `<pre>${JSON.stringify(j, null, 2)}</pre>`;
-        });
-
-
-        document.getElementById('genFrag').addEventListener('click', async () => {
-            const r = await fetch(`/generate?format=${fmt.value}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tableHtml: frag.value })
-            });
-            const blob = await r.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `checklist.${fmt.value}`; a.click();
-            URL.revokeObjectURL(url);
         });
     </script>
 </body>

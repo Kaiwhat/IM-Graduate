@@ -441,6 +441,10 @@
             const r = await fetch('/parse', { method: 'POST', body: fd });
             const j = await r.json();
             raw = j;
+            const studentName = j?.meta?.studentInfo?.studentName || '';
+            const studentId = j?.meta?.studentInfo?.studentId || '';
+            document.getElementById('stuName').value = studentName;
+            document.getElementById('stuYear').value = studentId.substring(0, 3);
             renderSummary(j);
             buildFilters(j.data || []);
             applyFilters();
