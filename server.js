@@ -58,5 +58,4 @@ app.post('/parse', upload.single('htmlFile'), async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`IM-GradChecklist running: http://localhost:${PORT}`);
-    console.log(`Upload UI: http://localhost:${PORT}/upload.html`);
 });
