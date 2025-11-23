@@ -46,11 +46,13 @@
       <tr>
         <th style="padding:2px;">姓名</th>
         <th style="padding:2px;" id="m_name"></th>
+        <th style="padding:2px;">學號</th>
+        <th style="padding:2px;" id="m_number"></th>
         <th style="padding:2px;">學年</th>
         <th style="padding:2px;" id="m_sem"></th>
         <th style="padding:2px;">次領域</th>
-        <th style="padding:2px;" id="m_sub" colspan="2"></th>
-        <th style="padding:2px;" colspan="2">目前已修習學分數</th>
+        <th style="padding:2px;" id="m_sub" colspan="1"></th>
+        <th style="padding:2px;" colspan="1">目前已修習學分數</th>
         <th style="padding:2px;" id="m_earned"></th>
       </tr>
       <tr>
@@ -83,6 +85,7 @@
       const raw = payload.raw || {};
       $('#m_name').textContent = payload.name || '';
       $('#m_sem').textContent = payload.semester || '';
+      $('#m_number').textContent = raw.meta.studentInfo.studentId || '';
 
       const chosen = payload.submajor || computeChosen(raw) || '';
       $('#m_sub').textContent = chosen || '資訊技術與系統開發次領域';
