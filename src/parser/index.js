@@ -299,10 +299,10 @@ function parseCoursesTable($, $table) {
     [
       '全校共同課程','通識領域課程','基礎院本課程','學系專業課程','自由選修'
     ].forEach(cat => {
-      const r = new RegExp(cat + '.*?(\\d+)\\s*\\/\\s*(\\d+)');
+      const r = new RegExp(cat + '.*?(\\d+(?:\\.\\d+)?)\\s*\\/\\s*(\\d+(?:\\.\\d+)?)');
       const mm = txt.match(r);
       if (mm) {
-        summary[cat] = { earned: parseInt(mm[1],10), required: parseInt(mm[2],10) };
+        summary[cat] = { earned: parseFloat(mm[1]), required: parseFloat(mm[2]) };
       }
     });
   });

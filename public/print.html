@@ -77,7 +77,7 @@
       try { return JSON.parse(localStorage.getItem('print_payload') || '{}'); } catch { return {}; }
     }
 
-    function computeChosen(raw) { return raw?.subdomainReassignment?.chosen || ''; }
+    function computeChosen(raw) { return maxSubdomain = Object.keys(raw.subdomainReassignment.totals).reduce((a, b) => (raw.subdomainReassignment.totals[a] > raw.subdomainReassignment.totals[b] ? a : b)) || ''; }
 
     function buildMeta(payload) {
       const raw = payload.raw || {};
@@ -146,10 +146,10 @@
           // 類別 + 每列一個科目名稱
           appendRow(tbody, [
             { text: cat + "<br>" + (getEarned(cat) + "/" + getRequired(cat)) + "<br>" + (getEarned(cat) >= getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
-            { text: (items[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + items[0]?.course?.name + " " + items[0]?.earned_credits_course + " 學分" + "</span>" || '', colspan: 8 }
+            { text: `<span style="color:${items[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${items[0]?.course?.name ?? ''}${items[0]?.course_raw_text?.includes(currentYear) ? ` (${items[0]?.course_credits ?? ''})` : " " + items[0]?.earned_credits_course + " 學分"}</span>`, colspan: 8 }
           ]);
           for (let i = 1; i < items.length; i++) {
-            appendRow(tbody, [{ text: (items[i]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + items[i]?.course?.name + " " + items[i].course?.name + " " + items[i]?.earned_credits_course + " 學分" + `</span>` || '', colspan: 8 }]);
+            appendRow(tbody, [{ text: `<span style="color:${items[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${items[i]?.course?.name ?? ''}${items[i]?.course_raw_text?.includes(currentYear) ? ` (${items[i]?.course_credits ?? ''})` : " " + items[i]?.earned_credits_course + " 學分"}</span>`, colspan: 8 }]);
           }
           if (items.length === 1) {
             appendRow(tbody, [{ text: '...', colspan: 8 }]);
@@ -170,20 +170,20 @@
                 { text: cat + "<br><br>" + (getEarned(cat) >= getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
                 { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
                 { text: arr[0]?.group || '', colspan: 3 },
-                { text: (arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" + '</span>' || '', colspan: 3 }
+                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
               firstInCat = false;
             } else {
               appendRow(tbody, [
                 { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
                 { text: arr[0]?.group || '', colspan: 3 },
-                { text: (arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" + '</span>' || '', colspan: 3 }
+                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
             }
             for (let i = 1; i < arr.length; i++) {
               appendRow(tbody, [
                 { text: arr[i]?.group || '', colspan: 3 },
-                { text: (arr[i]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[i]?.course?.name + " " + arr[i]?.earned_credits_course + " 學分" + '</span>' || '', colspan: 3 }
+                { text: `<span style="color:${arr[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[i]?.course?.name ?? ''}${arr[i]?.course_raw_text?.includes(currentYear) ? ` (${arr[i]?.course_credits ?? ''})` : " " + arr[i]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
             }
             if (arr.length < 2) {
@@ -261,19 +261,19 @@
               appendRow(tbody, [
                 { text: cat, rowspan: Math.max(3, t), colspan: 2, header: true },
                 { html: domHeaderHtml + "<br>" + (matchScore ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: spanDomain, colspan: 2, header: true },
-                { text: ((arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name || '') + ' ' + ((arr[0]?.earned_credits_course ?? '') + ' 學分' + '</span>'), colspan: 6 }
+                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? " " + arr[0]?.earned_credits_course + " 學分"}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 6 }
               ]);
               firstInCat = false;
             } else {
               appendRow(tbody, [
                 { html: domHeaderHtml + "<br>" + (matchScore ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: spanDomain, colspan: 2, header: true },
-                { text: ((arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name || '') + ' ' + ((arr[0]?.earned_credits_course ?? '') + ' 學分' + '</span>'), colspan: 6 }
+                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? " " + arr[0]?.earned_credits_course + " 學分"}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 6 }
               ]);
             }
 
             for (let i = 1; i < arr.length; i++) {
               appendRow(tbody, [
-                { text: ((arr[i]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[i]?.course?.name || '') + ' ' + ((arr[i]?.earned_credits_course ?? '') + ' 學分' + '</span>'), colspan: 6 }
+                { text: `<span style="color:${arr[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[i]?.course?.name ?? " " + arr[i]?.earned_credits_course + " 學分"}${arr[i]?.course_raw_text?.includes(currentYear) ? ` (${arr[i]?.course_credits ?? ''})` : " " + arr[i]?.earned_credits_course + " 學分"}</span>`, colspan: 6 }
               ]);
             }
             if (arr.length < 3) {
