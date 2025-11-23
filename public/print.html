@@ -145,7 +145,7 @@
         if (cat === '全校共同課程' || cat === '基礎院本課程' || cat === '自由選修') {
           // 類別 + 每列一個科目名稱
           appendRow(tbody, [
-            { text: cat + "<br>" + (getEarned(cat) + "/" + getRequired(cat)) + "<br>" + (getEarned(cat) > getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(1, items.length), colspan: 2, header: true },
+            { text: cat + "<br>" + (getEarned(cat) + "/" + getRequired(cat)) + "<br>" + (getEarned(cat) >= getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
             { text: (items[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + items[0]?.course?.name + " " + items[0]?.earned_credits_course + " 學分" + "</span>" || '', colspan: 8 }
           ]);
           for (let i = 1; i < items.length; i++) {
@@ -167,7 +167,7 @@
             const spanDomain = Math.max(2, arr.length);
             if (firstInCat) {
               appendRow(tbody, [
-                { text: cat + "<br><br>" + (getEarned(cat) > getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
+                { text: cat + "<br><br>" + (getEarned(cat) >= getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
                 { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
                 { text: arr[0]?.group || '', colspan: 3 },
                 { text: (arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name + " " + arr[0]?.earned_credits_course + " 學分" + '</span>' || '', colspan: 3 }
@@ -241,6 +241,12 @@
             byDom.set(key, arr);
           });
 
+          let t = 0;
+
+          const newItems = byDom.forEach((arr, label) => {
+            t += Math.max(3, arr.length);
+          });
+
           let firstInCat = true;
           byDom.forEach((arr, label) => {
             const spanDomain = Math.max(3, arr.length); // 最少 3 行以符合模板視覺
@@ -249,11 +255,11 @@
               ? `${agg.realName}`
               : label;
             const domHeaderHtml = `${domName == chosen ? `<span style="color:#0000FF">${domName}</span>` : domName}<br>${agg.earned} / ${agg.required ?? ''}`;
-            const matchScore = agg.earned > agg.required;
+            const matchScore = agg.earned >= agg.required;
 
             if (firstInCat) {
               appendRow(tbody, [
-                { text: cat, rowspan: Math.max(3, items.length), colspan: 2, header: true },
+                { text: cat, rowspan: Math.max(3, t), colspan: 2, header: true },
                 { html: domHeaderHtml + "<br>" + (matchScore ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: spanDomain, colspan: 2, header: true },
                 { text: ((arr[0]?.course_raw_text?.includes(currentYear) ? `<span style="color: #B94FFF">` : `<span>`) + arr[0]?.course?.name || '') + ' ' + ((arr[0]?.earned_credits_course ?? '') + ' 學分' + '</span>'), colspan: 6 }
               ]);

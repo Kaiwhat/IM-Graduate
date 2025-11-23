@@ -315,6 +315,7 @@
 
 
         function renderTable(rows) {
+            const currentYear = 1141;
             const tb = $('#tbl tbody');
             tb.innerHTML = '';
             if (!rows.length) return;
@@ -435,13 +436,20 @@
 
 
                 const mk = (txt) => { const td = document.createElement('td'); td.textContent = txt || ''; return td; };
-                // tr.appendChild(mk(r.req_type));
                 tr.appendChild(mk(r.group));
-                // tr.appendChild(mk(r.offered_by));
 
 
                 const tdC = mk(r.course_credits != null ? r.course_credits : ''); tdC.className = 'right'; tr.appendChild(tdC);
-                const tdE = mk(r.earned_credits_course != '' ? r.earned_credits_course : '0'); tdE.className = 'right'; tr.appendChild(tdE);
+                const tdE = mk(r.earned_credits_course != '' ? r.earned_credits_course : '0'); tdE.className = 'right';; tr.appendChild(tdE);
+                if (r.course_raw_text.includes(currentYear)) {
+                    tdCourse.style = 'color: #B94FFF;';
+                    tdC.style = 'color: #B94FFF;';
+                    tdE.style = 'color: #B94FFF;';
+                } else if (r.earned_credits_course == 0) {
+                    tdCourse.style = 'background-color: #FFE4E1;';
+                    tdC.style = 'background-color: #FFE4E1;';
+                    tdE.style = 'background-color: #FFE4E1;';
+                }
 
 
                 tb.appendChild(tr);
