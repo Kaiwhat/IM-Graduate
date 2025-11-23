@@ -18,7 +18,7 @@
       border: solid 5px;
       border-color: #46488e;
       width: 95%;
-      font-size: 16px;
+      font-size: 12px;
     }
 
     td,
@@ -169,21 +169,21 @@
               appendRow(tbody, [
                 { text: cat + "<br><br>" + (getEarned(cat) >= getRequired(cat) ? "已達規定門檻" : "<span style=\"color:#FF0000\">未達規定門檻</span>"), rowspan: Math.max(2, items.length), colspan: 2, header: true },
                 { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
-                { text: arr[0]?.group || '', colspan: 3 },
-                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
+                { text: `<span style="font-size: 11px">${arr[0]?.group}</span>` || '', colspan: 3 },
+                { text: `<span style="font-size: 11px; color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
               firstInCat = false;
             } else {
               appendRow(tbody, [
                 { text: dom + "<br>" + (arr[0]?.earned_credits_group + "/" + arr[0]?.required_credits_group), rowspan: spanDomain, colspan: 2, header: true },
-                { text: arr[0]?.group || '', colspan: 3 },
-                { text: `<span style="color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
+                { text: `<span style="font-size: 11px">${arr[0]?.group}</span>` || '', colspan: 3 },
+                { text: `<span style="font-size: 11px; color:${arr[0]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[0]?.course?.name ?? ''}${arr[0]?.course_raw_text?.includes(currentYear) ? ` (${arr[0]?.course_credits ?? ''})` : " " + arr[0]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
             }
             for (let i = 1; i < arr.length; i++) {
               appendRow(tbody, [
-                { text: arr[i]?.group || '', colspan: 3 },
-                { text: `<span style="color:${arr[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[i]?.course?.name ?? ''}${arr[i]?.course_raw_text?.includes(currentYear) ? ` (${arr[i]?.course_credits ?? ''})` : " " + arr[i]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
+                { text: `<span style="font-size: 11px">${arr[0]?.group}</span>` || '', colspan: 3 },
+                { text: `<span style="font-size: 11px; color:${arr[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${arr[i]?.course?.name ?? ''}${arr[i]?.course_raw_text?.includes(currentYear) ? ` (${arr[i]?.course_credits ?? ''})` : " " + arr[i]?.earned_credits_course + " 學分"}</span>`, colspan: 3 }
               ]);
             }
             if (arr.length < 2) {
@@ -290,8 +290,8 @@
       month = date.getMonth() + 1;
       day = date.getDate();
 
-      appendRow(tbody, [{ text: "<br><br>通識講座<br><br>", colspan: 2 }, { text: sum.lecture, colspan: 8 }]);
-      appendRow(tbody, [{ text: "<br><br>英文畢業門檻<br><br>", colspan: 2 }, { text: sum.english, colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br>通識講座<br>", colspan: 2 }, { text: sum.lecture, colspan: 8 }]);
+      appendRow(tbody, [{ text: "<br>英文畢業門檻<br>", colspan: 2 }, { text: sum.english, colspan: 8 }]);
       appendRow(tbody, [{ text: "<br><br>備註<br>(供手動認抵學分用)<br><br>", colspan: 2 }, { text: "<br><br><br><br>務必請授課老師親簽或蓋章,代表同意抵免課程,以利系辦複核", colspan: 8 }]);
       appendRow(tbody, [{ text: "學號：" + raw.meta.studentInfo.studentId + "<br>學生簽名<br>" + month + "/" + day + "/" + year, colspan: 2 }, { text: "<br><br><br>本人經查核,確認畢業學分無誤。", colspan: 3 }, { text: "系辦複核:", colspan: 2 }, { text: "", colspan: 3 }]);
     }
