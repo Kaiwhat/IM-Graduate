@@ -204,42 +204,7 @@ function reassignMajorSubdomains(rows) {
   };
 }
 
-// 科目名稱欄位的精細解析（抓課號/課名/歷次修課紀錄）
-function parseCourseCell($, tdHtml) {
-  // 直接用 cheerio 再 parse 一次這個欄位的 HTML，讀 <span> 與顏色
-  const $$ = cheerio.load(`<td>${tdHtml}</td>`);
-  const spans = $$('span');
 
-  // 第一個黑字通常是原科目名：[課號]課名
-  let baseCode = null, baseName = null;
-  const base = spans.first().text().trim();
-  const m1 = base.match(/\[(.+?)\](.+)/);
-  if (m1) { baseCode = m1[1].trim(); baseName = m1[2].trim(); }
-
-  // 後續每個 span 可能是藍/紫/紅，形如：(1121)[課號]課名(學分)
-  const records = [];
-  spans.slice(1).each((_, el) => {
-    const $s = $$(el);
-    const color = String(($s.attr('style') || '').toLowerCase());
-    const txt = $s.text().trim();
-
-    const mm = txt.match(/\((\d{3,4}[12])\)\[(.+?)\](.+?)\(([\d.]+)\)/);
-    if (mm) {
-      let status = 'other';
-      if (color.includes('#0000ff')) status = 'taken';     // 藍：已選修
-      if (color.includes('#b94fff')) status = 'enrolled';  // 紫：修課中
-      records.push({
-        term: mm[1], code: mm[2].trim(), name: mm[3].trim(),
-        credits: parseFloat(mm[4]), color, status, raw: txt
-      });
-    } else {
-      // 有些自由選修是暗紅色字型，直接保留原文
-      records.push({ term: null, code: null, name: null, credits: null, color, status:'other', raw: txt });
-    }
-  });
-
-  return { code: baseCode, name: baseName, records };
-}
 
 
 // 主解析器（吃 <tbody>，並產出漂亮 JSON）
@@ -291,7 +256,6 @@ function parseCoursesTable($, $table) {
     obj.course_raw_text = row.texts[courseCellIdx] || '';
     obj.course_raw_html = row.htmls[courseCellIdx] || '';
 
-    obj.course = parseCourseCell(obj.course_raw_html || '');
     // 補強：確保 obj.course 存在
     // 確保 obj.course 存在
     if (!obj.course || typeof obj.course !== 'object') obj.course = {};
