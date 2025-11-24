@@ -155,7 +155,7 @@
             appendRow(tbody, [{ text: `<span style="color:${items[i]?.course_raw_text?.includes(currentYear) ? '#B94FFF' : '#000'}">${items[i]?.course?.name ?? ''}${items[i]?.course_raw_text?.includes(currentYear) ? ` (${items[i]?.course_credits ?? ''})` : " " + items[i]?.earned_credits_course + " 學分"}</span>`, colspan: 8 }]);
           }
           if (items.length === 1) {
-            appendRow(tbody, [{ text: '...', colspan: 8 }]);
+            appendRow(tbody, [{ text: '</br>', colspan: 8 }]);
           }
         } else if (cat === '通識領域課程') {
           // 依 domain 分組，列出 group 與課名
@@ -192,7 +192,7 @@
             if (arr.length < 2) {
               appendRow(tbody, [
                 { text: arr[0]?.group || '', colspan: 3 },
-                { text: '...', colspan: 3 }
+                { text: '</br>', colspan: 3 }
               ]);
             }
           });
@@ -281,7 +281,7 @@
             }
             if (arr.length < 3) {
               for (let k = arr.length; k < 3; k++) {
-                appendRow(tbody, [{ text: '...', colspan: 6 }]);
+                appendRow(tbody, [{ text: '</br>', colspan: 6 }]);
               }
             }
           });
